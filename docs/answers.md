@@ -5,6 +5,19 @@
 The workflow requests no OIDC token permission, so the `auth` step never gets the
 variables it needs. Add `id-token: write`.
 
+This is not hypothetical. The same workflow runs for real at this repository's
+root and fails at the auth step with:
+
+```text
+GitHub Actions did not inject $ACTIONS_ID_TOKEN_REQUEST_TOKEN or
+$ACTIONS_ID_TOKEN_REQUEST_URL into this job.
+```
+
+Latest run:
+[actions/runs/34683633026](https://github.com/adilshehzad786/copilot-cli-real-infra/actions/runs/34683633026).
+Re-trigger it from the Actions tab (`plan` → Run workflow) whenever you want a
+fresh failure on screen.
+
 Job-level `permissions` **replaces** the workflow-level block rather than merging
 with it, so both scopes must be listed or `checkout` loses `contents: read`:
 

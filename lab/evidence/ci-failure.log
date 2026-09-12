@@ -1,4 +1,6 @@
-SYNTHETIC FIXTURE — not output captured from a real GitHub Actions run.
+SYNTHETIC FIXTURE — but a transcript of a real failure mode. The same
+workflow runs for real in the talk repository's Actions tab, where it fails
+at the auth step with these diagnostics.
 Workflow: plan
 Event: pull_request
 Job: plan

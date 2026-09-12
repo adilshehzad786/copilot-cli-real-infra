@@ -71,6 +71,15 @@ Ask it:
 It should tell you the workflow never asked for an OIDC token — it is missing
 `id-token: write`.
 
+That log is synthetic, but the failure is not hypothetical: the same workflow
+runs for real in this repository, and fails exactly this way. See the latest run
+under
+[Actions](https://github.com/adilshehzad786/copilot-cli-real-infra/actions) —
+it stops at the auth step with `GitHub Actions did not inject
+$ACTIONS_ID_TOKEN_REQUEST_TOKEN or $ACTIONS_ID_TOKEN_REQUEST_URL into this job`,
+before anything reaches Google Cloud. Re-run it any time from the Actions tab
+("plan" workflow → Run workflow).
+
 **Now notice what did not happen.** It read a workflow, a log and a directory tree,
 and never once asked your permission.
 

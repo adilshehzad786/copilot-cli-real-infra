@@ -13,14 +13,17 @@ The deliberate defects:
 | `lab/terraform/main.tf` | `google_storage_bucket_iam_member` granting `roles/storage.objectViewer` to `allUsers` | The public exposure the agent is asked to find in Demo 2 |
 | `lab/terraform/main.tf` | No `uniform_bucket_level_access`, no `public_access_prevention`, `force_destroy = true` | The rest of the hardening exercise. Uniform access alone would leave the public grant in place — that is the lesson |
 | `lab/.github/workflows/ci.yml` | Missing `id-token: write` | The failure Demo 1 diagnoses |
+| `.github/workflows/ci.yml` | The same missing permission, at the repository root | The live exhibit. It fails by design at the auth step, before anything reaches Google Cloud; the repository variables it references hold intentionally fake, well-formed values |
 | `lab/.github/workflows/ci.yml` | A federated cloud identity held while running Terraform from a pull request | Named out loud from the stage. It is the same borrowed-access story as the agent's, so fixing it quietly would remove the point |
 | `lab/evidence/ci-failure.log` | A planted instruction in contributor build output | Demonstrates prompt injection through content the agent reads. Demo 1 runs with no shell, so it is provably inert |
 | `lab/.env` (created during setup) | A fake secret | Gives the denied-path policy a real file to deny. Contains `DEMO_SENTINEL=synthetic-not-a-secret` |
 
 The expected fixes are in [docs/answers.md](docs/answers.md).
 
-`lab/stubs/` contains thirteen symlinks to a four-line shell script that prints a
-marker and exits. No command in this lab can reach a cloud API.
+`lab/stubs/` contains twelve symlinks to a four-line shell script that prints a
+marker and exits. No command in this lab can reach a cloud API. (`gh` is
+deliberately not stubbed: Copilot CLI borrows the GitHub CLI's login to
+authenticate, so shadowing it breaks the session itself.)
 
 ## Reporting a real vulnerability
 
