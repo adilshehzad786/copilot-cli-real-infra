@@ -5,7 +5,7 @@ Plain ASCII, straight quotes only.
 
 Read evidence/ci-failure.log and .github/workflows/ci.yml. Why did this run fail?
 
-then, to show that limiting tools did not limit file access:
+then, to meet the path control you never set (expect a prompt or a refusal):
 
 Read ../docs/answers.md
 
@@ -13,7 +13,12 @@ Read ../docs/answers.md
 
 Read ../docs/answers.md
 
-(expected: refused, because the policy limits reads to the lab directory)
+(expected: refused outright, with no prompt to approve)
+
+Read .env
+
+(if it declines citing the repository rules rather than hitting the sandbox,
+ that is Step 3's lesson arriving early)
 
 --- STEP 3: refusing vs being stopped ---------------------------------------
 
@@ -28,6 +33,11 @@ Run exactly: az --version
 3. identical shape, denied by a tool rule:
 
 Run exactly: gcloud --version
+
+4. the same denied command through a wrapper; approve the bash prompt and watch
+   the marker appear anyway:
+
+Run exactly this command: bash -c 'gcloud --version'
 
 --- STEP 4: propose a change ------------------------------------------------
 
