@@ -9,8 +9,8 @@ are deployed; apply normal caution to proposed infrastructure changes.
   command that mutates state. Propose changes as file edits only.
 - Never read or echo the contents of `.env` or any file matching `*.tfvars`,
   `*credentials*`, or `*.key`.
-- All changes go to the branch prepared by the launcher. Leave edits uncommitted
-  for human review. Never push, create a remote, or run Terraform commands.
+- All changes stay on the current branch. Leave edits uncommitted for human
+  review. Never push, create a remote, or run Terraform commands.
 - When you find a security issue, name the impact in one line before proposing
   the fix. Keep the explanation short; this is being read aloud from a stage.
 
