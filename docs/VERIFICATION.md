@@ -20,18 +20,20 @@ credential was used, and no plan or apply was executed.
 ## Local checks
 
 ```bash
-./scripts/check-lab.sh                 # 27 offline tests against a stub CLI
-terraform fmt -check demo/terraform
+terraform fmt -check lab/terraform
+python3 -m json.tool lab/policy/read-only.json  > /dev/null && echo "policy ok"
+python3 -m json.tool lab/policy/read-write.json > /dev/null && echo "policy ok"
+PATH="$PWD/lab/stubs:$PATH" gcloud --version     # DEMO_STUB_EXECUTED
 ```
 
-The suite covers the disposable estate, the exact launch contract per beat, the
-child environment allowlist, the generated policy's content, every refusal path,
-and the fake cloud commands. It cannot validate GitHub's tool matcher, the sandbox
-implementation, model behaviour, or a provider schema.
+There is no test harness any more, and that is deliberate. The previous one
+tested launcher scripts that no longer exist — and those scripts hid the
+permission flags that are the whole point of the lab. What remains is a handful
+of files a reader can check by eye, which is the right amount of machinery for a
+teaching repository.
 
 Verified during review, worth not re-deriving:
 
-- All 27 tests pass on Python 3.11 and 3.9.
 - `terraform fmt -check` passes on the fixture and the hardened answer.
 - `terraform init -backend=false && terraform validate` succeeds against
   hashicorp/google 6.50.0.
@@ -52,6 +54,8 @@ git-ignored.
 
 | Case | Required evidence | Status |
 |---|---|---|
+| **Project-level sandbox config** | Whether `settings.json` can live in the project (committed) rather than only in `COPILOT_HOME`. If it can, the lab drops the `sed` step entirely | Unverified |
+| **Fresh `COPILOT_HOME` and login** | Whether a new config directory forces a re-login, and whether two directories can share login state. Decides how much setup must happen off stage | Unverified |
 | CLI compatibility | Version, OS, model, required flags, `/settings` Problems tab empty | Unverified |
 | **Sandbox path-grant key spelling** | Whether the build honours `userPolicy.readonlyPaths` or only `userPolicy.filesystem.readonlyPaths`. `/sandbox policy` shows the estate as read-only (A/C) or read-write (B), and Problems is empty | Unverified |
 | Unknown settings key handling | Does the build flag it in Problems, ignore it, or discard the whole file? | Unverified |

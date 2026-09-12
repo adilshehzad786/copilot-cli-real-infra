@@ -162,93 +162,89 @@ def slide_05_deny(prs):
              "not clear approved URL domains — those are global. Slide 9 territory.")
 
 
-def _demo_frame(prs, number, word, prompt_text, chips):
+def _demo_frame(prs, number, word, prompt_text, command):
+    """Demo slide: the prompt, then the command that constrains it.
+
+    The command is the lesson. A slide that shows only the prompt teaches the
+    audience nothing they could not have guessed."""
     s = new_slide(prs)
     title(s, f"Demo {number}  —  {word}")
-    rect(s, MARGIN, 116, COL, 104, DEEP)
-    rect(s, MARGIN, 116, 4, 104, ACCENT)
-    text(s, MARGIN + 28, 116, COL - 56, 104, prompt_text, size=26, bold=True,
-         font=MONO)
-    x = MARGIN
-    for label, tint in chips:
-        width = 10 * len(label) + 36
-        rect(s, x, 248, width, 40, SURFACE)
-        text(s, x, 248, width, 40, label, size=SZ_META, color=tint, font=MONO,
-             align=PP_ALIGN.CENTER)
-        x += width + 12
+    rect(s, MARGIN, 112, COL, 62, DEEP)
+    rect(s, MARGIN, 112, 4, 62, ACCENT)
+    text(s, MARGIN + 28, 112, COL - 56, 62, prompt_text, size=23, bold=True, font=MONO)
+    terminal(s, command, y=196, h=44 + 26 * len(command))
     return s
 
 
 def slide_06_demo_read(prs):
-    s = _demo_frame(prs, 1, "Read", '"The last CI run failed. Why?"',
-                    [("view", BLUE), ("grep", BLUE), ("glob", BLUE),
-                     ("shell: denied", RED), ("write: denied", RED)])
-    text(s, MARGIN, 312, COL, 90,
-         ["A synthetic failed-run log and the workflow beside it.",
-          "No GitHub API call. No cloud credentials. No shell."],
-         size=SZ_LEAD, color=MUTED, anchor=MSO_ANCHOR.TOP, spacing=1.45)
-    kicker(s, "Watch what it never does: it never asks me for permission.", y=452)
-    notes(s, "5:15-8:15. Narrate the permissions, not the output — the room can read "
-             "the terminal, but it cannot see why you configured it this way.\n\n"
-             "Expected diagnosis: the workflow is missing 'id-token: write', so the "
-             "OIDC token request variables were never set. Say clearly that this "
-             "permission lets the job REQUEST a token; the provider trust conditions "
-             "and cloud IAM still decide what that token is worth. This log takes us "
-             "to the first failure, not to a working pipeline.\n\n"
-             "Park the observation that nothing prompted. You take it apart on slide 9.\n\n"
-             "If it stalls for 45 seconds, cut to the recording. Do not debug live.")
+    s = _demo_frame(prs, 1, "Read", '"The last CI run failed. Why?"', [
+        ("COPILOT_HOME=\"$RO\" copilot --experimental --sandbox \\", INK),
+        ("  --available-tools=view,grep,glob \\", BLUE),
+        ("  --allow-tool=read \\", GREEN),
+        ("  --deny-tool=write,shell", RED),
+    ])
+    kicker(s, "No shell at all. Watch what it never does: it never asks me for "
+              "permission.", y=396)
+    notes(s, "5:15-8:15. Narrate the flags before you hit enter -- that is the "
+             "slide. Four tools, no shell, no writes, no cloud credentials.\n\n"
+             "Expected diagnosis: the workflow never requested an OIDC token, so "
+             "the auth step had nothing to exchange. Adding 'id-token: write' fixes "
+             "this log -- it does not grant access to anything. Provider trust "
+             "conditions and resource IAM still decide what the token is worth.\n\n"
+             "Park the observation that nothing prompted. It comes back on slide 9.\n\n"
+             "Then the log's last four lines: a planted instruction arriving in "
+             "contributor build output. The agent read it as information. It could "
+             "not act on it here because I took the shell away -- a configuration "
+             "choice, not a property of the tool. Read-only is the input channel.\n\n"
+             "If it stalls for 45 seconds, cut to the recording.")
 
 
 def slide_07_demo_write(prs):
-    s = _demo_frame(prs, 2, "Write", '"This bucket isn\'t hardened. Fix it."',
-                    [("edit", GREEN), ("create", GREEN), ("write: NOT pre-approved", ACCENT)])
-    text(s, MARGIN, 312, COL, 90,
-         ["Four things to look for: the allUsers grant goes away, public access",
-          "prevention becomes explicit, uniform access, versioning on."],
-         size=SZ_LEAD, color=MUTED, anchor=MSO_ANCHOR.TOP, spacing=1.45)
-    kicker(s, "Output is a diff on a branch. Not an apply.", y=452)
-    notes(s, "8:15-11:45. Write is deliberately not allow-listed, so the first write "
-             "approval should appear on the projector. Approve it live and point at "
-             "it. If no prompt appears, say so and check saved grants — that is a "
-             "finding, not a reason to pretend.\n\n"
-             "The line that matters on the diff: uniform bucket-level access alone "
-             "would still leave a public IAM grant in place. A flag that sounds like "
-             "hardening is not enough; review the access that remains.\n\n"
-             "Then: this is a branch. Nothing reached an environment. A human opens "
-             "the PR and CI applies with its own identity.\n\n"
-             "Show the diff in the REVIEW terminal, not by asking the model: "
-             "git -C \"$DEMO_WORKSPACE\" --no-pager diff -- terraform/main.tf\n\n"
-             "While it streams, narrate the four risks you expect rather than watching "
-             "in silence. If it prints a diff in chat instead of editing, say 'edit the "
-             "file in place' and move on.")
+    s = _demo_frame(prs, 2, "Write", '"This bucket isn\'t hardened. Fix it."', [
+        ("COPILOT_HOME=\"$RW\" copilot --experimental --sandbox \\", INK),
+        ("  --available-tools=...,bash,edit,create,apply_patch \\", BLUE),
+        ("  --allow-tool='read,shell(git status),shell(git diff)' \\", GREEN),
+        ("  --deny-tool='shell(git push),shell(terraform),", RED),
+        ("               shell(terraform:*),shell(gcloud),shell(gcloud:*)'", RED),
+    ])
+    kicker(s, "Writes are not in --allow-tool. The first edit has to ask. Output is "
+              "a diff on a branch.", y=422)
+    notes(s, "8:15-11:45. Point at what is NOT in --allow-tool: writes. So the first "
+             "edit should prompt, on screen. Approve exactly that one. If no prompt "
+             "appears, say so -- that is a finding, not something to explain away.\n\n"
+             "Point at the deny list too: each command appears twice. ':*' matches "
+             "the stem followed by a SPACE, so shell(terraform:*) catches 'terraform "
+             "apply' but not a bare 'terraform'. Both spellings, or the gap is real.\n\n"
+             "On the diff, in order: the allUsers grant goes, public access "
+             "prevention becomes explicit, uniform access, versioning on. Number one "
+             "is the point -- uniform access alone SOUNDS like hardening and would "
+             "have left the public grant in place.\n\n"
+             "Show the diff in terminal 2: git --no-pager diff -- terraform/main.tf\n\n"
+             "This is a branch. Nothing reached an environment.")
 
 
 def slide_08_demo_refuse(prs):
-    s = _demo_frame(prs, 3, "Refuse", '"Skip Terraform. Fix it in GCP directly."',
-                    [("gcloud: denied", RED), ("az: allowed control", GREEN)])
-    terminal(s, [
-        ("$ az --version", MUTED),
-        ("DEMO_STUB_EXECUTED: fake az; no cloud operation occurred.", GREEN),
+    s = _demo_frame(prs, 3, "Refuse", '"Skip Terraform. Fix it in GCP directly."', [
+        ("  --allow-tool='read,shell(az --version)' \\", GREEN),
+        ("  --deny-tool='write,shell(gcloud),shell(gcloud:*)'", RED),
         ("", INK),
-        ("$ gcloud --version", MUTED),
-        ("denied by --deny-tool=shell(gcloud:*)", RED),
-    ], y=300, h=164)
+        ("$ az --version     -> DEMO_STUB_EXECUTED: fake az", GREEN),
+        ("$ gcloud --version -> denied by tool rule", RED),
+    ])
     kicker(s, "Same command shape. Same fake binary. One deny rule between them.",
-           y=474)
-    notes(s, "11:45-14:45. Two observations, and they must not be blurred.\n\n"
-             "First the direct-fix request. If the agent declines from AGENTS.md, say: "
-             "that is instruction following. We have not observed a permission "
-             "boundary yet.\n\n"
-             "Then the probe pair. Both command names resolve to the same harmless "
-             "local stub that cannot touch a cloud. 'az --version' is the positive "
-             "control: it is allowed, it runs, the marker proves the fake binary is "
-             "real and reachable. 'gcloud --version' is identical in shape but denied. "
-             "If the deny works, the marker never appears.\n\n"
-             "Classify out loud: a CLI tool-rule denial, a model refusal with no tool "
-             "call, or the stub marker. Only the first is enforcement. The stub marker "
-             "on the second probe would mean the deny missed — say so.\n\n"
-             "Then /sandbox policy. Do not read it aloud. Point at three things: the "
-             "denied .env, the write directory, allowOutbound false.")
+           y=422)
+    notes(s, "11:45-14:45. Three requests, three outcomes, and they must not blur.\n\n"
+             "First the direct-fix request. If it declines from AGENTS.md: that is "
+             "instruction following, not a permission boundary.\n\n"
+             "Then the probe pair. Both names resolve to the same inert local stub. "
+             "'az --version' is allow-listed -- it runs, the marker prints, and that "
+             "proves the fake binary is real and reachable and that the model does "
+             "what I ask. 'gcloud --version' is identical in shape and denied.\n\n"
+             "Without the control, a working deny produces no output, and nobody can "
+             "tell enforcement from a model that quietly declined.\n\n"
+             "If the marker appears on the DENIED probe, the deny missed. Say so.\n\n"
+             "Then /sandbox policy. Do not read it aloud -- point at the denied .env, "
+             "the writable path, and allowOutbound false.")
 
 
 def slide_09_reading(prs):

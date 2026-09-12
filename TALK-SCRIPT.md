@@ -97,16 +97,16 @@ mechanism in the product. My hooks are part of what I have to review."
 
 ## Act 3 — the demonstrations
 
-[Narrate the permissions, not the output. The room can read the terminal; what
-they cannot see is why it was configured this way. `clear` and `cat` the banner
-before each beat so the flags are on screen.]
+[Narrate the flags BEFORE you hit enter. The command is the slide: the room can
+read the terminal, but they cannot see why it was configured this way. `clear`
+before each beat.]
 
 ### Slide 6 — demo 1, read, 5:15–8:15
 
 "Four tools: view, grep, glob. Shell denied. Writes denied. No cloud credentials
 anywhere near this session."
 
-[Prompt from `demo/prompts.txt`.]
+[Prompt from `docs/prompts.txt`.]
 
 When the diagnosis lands:
 
@@ -147,7 +147,7 @@ appears, say so and check saved grants — that is a finding, not a thing to
 explain away. While it streams, narrate the four risks you expect rather than
 watching in silence.]
 
-Review the diff in terminal R, in this order:
+Review the diff in terminal 2, in this order:
 
 1. The `allUsers` grant is gone.
 2. Public access prevention is explicit.

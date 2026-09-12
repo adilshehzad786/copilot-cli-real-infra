@@ -65,7 +65,7 @@ Versioning and soft delete are different controls. An overwrite without versioni
 is not necessarily unrecoverable: [Cloud Storage soft delete](https://docs.cloud.google.com/storage/docs/soft-delete)
 retains overwritten and deleted objects, with a seven-day default retention period.
 
-`hardened-main.tf.example` is an expected review answer, not a migration plan.
+[hardened-main.tf.example](hardened-main.tf.example) is an expected review answer, not a migration plan.
 Uniform access breaks workloads that rely on object ACLs, and public access
 prevention breaks public readers. A real change needs a locked provider version, a
 reviewed saved plan, and a workload and retention review before CI applies it with
@@ -75,8 +75,8 @@ state rollback.
 ## Checking it locally
 
 ```bash
-terraform fmt -check demo/terraform
-terraform -chdir=demo/terraform init -backend=false && terraform -chdir=demo/terraform validate
+terraform fmt -check lab/terraform
+terraform -chdir=lab/terraform init -backend=false && terraform -chdir=lab/terraform validate
 ```
 
 `validate` needs the provider downloaded, which is a deliberate network step the

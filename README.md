@@ -2,135 +2,109 @@
 
 **The agent borrows your access. Scope what it borrows.**
 
-A 20-minute talk and a local lab about what an AI coding agent can reach on a
+A 20-minute talk and an offline lab about what an AI coding agent can reach on a
 machine that holds cloud credentials, which controls actually constrain it, and
 where those controls stop.
 
-The lab runs offline. It builds a throwaway Git repository containing a
-deliberately broken CI workflow and an unhardened Terraform bucket, then launches
-GitHub Copilot CLI against it three times with three different permission
-configurations. No GCP project, no deployment, and no real credentials are
-involved at any point.
+There are no launcher scripts. Every step is the real `copilot` command with its
+real flags, because the permission flags *are* the lesson.
 
 | | |
 |---|---|
-| [Run the lab](#run-the-lab) | Setup and the three demo beats |
-| [demo/README.md](demo/README.md) | Prompts, expected results, and what each beat proves |
+| [docs/lab-guide.md](docs/lab-guide.md) | **The lab, command by command** |
+| [docs/prompts.txt](docs/prompts.txt) | Paste-ready prompts for each beat |
+| [docs/answers.md](docs/answers.md) | Expected results — read after, not before |
 | [presentations/](presentations/README.md) | The 12-slide deck and how to rebuild it |
 | [TALK-SCRIPT.md](TALK-SCRIPT.md) | The spoken argument |
-| [TALK-RUNSHEET.md](TALK-RUNSHEET.md) | Stage-day clock, checklists, recovery |
-| [docs/VERIFICATION.md](docs/VERIFICATION.md) | What is documented, what was tested, what is not |
-| [docs/REVIEW.md](docs/REVIEW.md) | Review history and the defects that are deliberate |
+| [TALK-RUNSHEET.md](TALK-RUNSHEET.md) | Stage-day clock and recovery |
+| [docs/VERIFICATION.md](docs/VERIFICATION.md) | What is documented, what is tested, what is not |
 
 ## The claim
 
 Copilot CLI holds no cloud permissions of its own. When it runs `gcloud`, gcloud
-authenticates. When it runs a client library, the library finds credentials. The
-question is never "what can the agent do" — it is "whose authority can each tool
-reach from this shell."
+authenticates. When it runs a client library, the library goes looking for
+credentials and finds yours. The question is never "what can the agent do" — it is
+"whose authority can each tool reach from this shell."
 
-On a developer laptop that can mean an active gcloud login, Application Default
-Credentials, a kubeconfig, an SSH agent, or a metadata identity. A remote MCP
-server is different again: it runs off your machine and may authenticate as a
-principal you never see.
+On a laptop that can mean an active gcloud login, Application Default Credentials,
+a kubeconfig, or an SSH agent. A remote MCP server is different again: it runs off
+your machine and may authenticate as a principal you never see.
 
-Unsetting one environment variable does not produce an empty credential
-environment. ADC falls back from `GOOGLE_APPLICATION_CREDENTIALS` to a well-known
-file and then to a metadata service. See the
+Unsetting one variable does not produce an empty credential environment. ADC falls
+back from `GOOGLE_APPLICATION_CREDENTIALS` to a well-known file and then to a
+metadata service. See the
 [ADC search order](https://docs.cloud.google.com/docs/authentication/application-default-credentials).
 
-## Run the lab
+## Run it
 
-### Prerequisites
-
-- **macOS or Linux.** The lab's sandbox policy sets `deniedPaths`, which the
-  Windows backend cannot enforce, and Windows sandboxing needs an Insiders build.
-  On Windows, use a Linux VM or container.
-- Python 3.9+, Git, and Bash.
-- [Copilot CLI](https://docs.github.com/en/copilot/how-tos/copilot-cli/set-up-copilot-cli/install-copilot-cli)
-  and an active Copilot subscription — needed only for steps 3 onward.
-  An organization or enterprise admin can disable the CLI outright, so check
-  policy before debugging a token.
-- Ideally a disposable VM holding no cloud credentials. The launcher rebuilds the
-  session environment, but your OS user and home directory still apply.
-
-### 1. Check the harness
+**Requires macOS or Linux.** The lab's policy sets `deniedPaths`, which the Windows
+sandbox backend cannot enforce. Also needs Git, and
+[Copilot CLI](https://docs.github.com/en/copilot/how-tos/copilot-cli/set-up-copilot-cli/install-copilot-cli)
+with an active subscription. Ideally a disposable VM with no cloud credentials.
 
 ```bash
 git clone https://github.com/adilshehzad786/copilot-cli-real-infra.git
 cd copilot-cli-real-infra
-./scripts/check-lab.sh
+
+cp -R lab ~/copilot-lab && cd ~/copilot-lab
+git init -q && git add -A && git commit -qm "lab baseline"
+echo 'DEMO_SENTINEL=synthetic-not-a-secret' > .env
+export PATH="$PWD/stubs:$PATH"
+
+export RO="$(mktemp -d)" RW="$(mktemp -d)"
+sed "s|__LAB__|$PWD|g; s|__HOME__|$HOME|g" policy/read-only.json  > "$RO/settings.json"
+sed "s|__LAB__|$PWD|g; s|__HOME__|$HOME|g" policy/read-write.json > "$RW/settings.json"
 ```
 
-Runs the offline test suite. It exercises our launcher against a stub, not
-GitHub's permission engine, and needs no Copilot install.
-
-### 2. Create a throwaway estate
+Then the three beats:
 
 ```bash
-export DEMO_WORKSPACE="$(python3 scripts/setup-demo.py --parent ~/talk-lab)"
-echo "$DEMO_WORKSPACE"
+# A — read. No shell at all, no writes, four tools.
+COPILOT_HOME="$RO" copilot --experimental --sandbox \
+  --available-tools=view,grep,glob \
+  --allow-tool=read \
+  --deny-tool=write,shell
+
+# B — write. Editing tools available; writes deliberately NOT pre-approved.
+git switch -c demo/harden-bucket
+COPILOT_HOME="$RW" copilot --experimental --sandbox \
+  --available-tools=view,grep,glob,bash,edit,create,apply_patch \
+  --allow-tool='read,shell(git status),shell(git diff)' \
+  --deny-tool='shell(git push),shell(git commit),shell(terraform),shell(terraform:*),shell(gcloud),shell(gcloud:*)'
+
+# C — refuse. One cloud command allowed as a control, one denied.
+COPILOT_HOME="$RO" copilot --experimental --sandbox \
+  --available-tools=view,grep,glob,bash \
+  --allow-tool='read,shell(az --version)' \
+  --deny-tool='write,shell(gcloud),shell(gcloud:*)'
 ```
 
-Creates a new temporary Git repository on `main` with a baseline commit, no
-remote, and only the fixture files. `--parent ~/talk-lab` keeps the path short
-enough to read from a projector; omit it for the system temp directory.
+Inspect `/sandbox status` and `/sandbox policy` before typing a prompt. If the
+policy is inactive or does not deny `.env`, stop.
 
-Nothing is ever initialised, reset, or committed in this repository. To start
-over, run the command again — the old estate stays on disk with its diff intact.
+Full walkthrough: [docs/lab-guide.md](docs/lab-guide.md).
 
-### 3. Confirm all three beats will launch
-
-```bash
-./scripts/preflight.sh
-```
-
-Checks the CLI version, required flags, sandbox backend and estate state for
-every beat without starting a session, creating a branch, or consuming a login.
-Do this before stage day, not ten minutes before.
-
-### 4. Run the beats
-
-```bash
-./demo/sessions/a-read-only.sh        # inspect: diagnose the CI failure
-./demo/sessions/b-propose-change.sh   # propose: harden the bucket on a branch
-./demo/sessions/c-refuse.sh           # distinguish: refusal vs. enforcement
-```
-
-Each launch prints its exact flags, generates a fresh `COPILOT_HOME` so no saved
-approval from an earlier run is in scope, and writes a sandbox policy. **Inspect
-`/sandbox status` and `/sandbox policy` before typing a prompt.** If the policy is
-inactive or does not deny `.env` and tool network access, stop.
-
-The prompts and the expected evidence for each beat are in
-[demo/README.md](demo/README.md).
-
-After beat B, review the diff from a separate shell:
-
-```bash
-git -C "$DEMO_WORKSPACE" --no-pager diff -- terraform/main.tf
-```
-
-Nothing commits, pushes, opens a pull request, or applies infrastructure.
+**Quote the parentheses.** `--deny-tool=shell(git push)` unquoted is a hard syntax
+error in both bash and zsh.
 
 ## What the three beats show
 
 | Beat | Task | What it proves |
 |---|---|---|
-| A: inspect | Diagnose a synthetic CI failure | The workflow never requested an OIDC token — and nothing prompted for any of those reads |
-| B: propose | Harden the bucket configuration | A write approval, a branch, and a reviewable diff. Uniform access alone would leave the public IAM grant in place |
-| C: distinguish | Ask for a direct cloud fix, then probe two identical commands | A model declining is not a permission boundary. One allowed probe reaches the local stub; one denied probe does not |
+| A: read | Diagnose a synthetic CI failure | The workflow never requested an OIDC token — and nothing prompted for any of those reads |
+| B: write | Harden the bucket configuration | A write approval, a branch, a reviewable diff. Uniform access alone would leave the public IAM grant in place |
+| C: refuse | Ask for a direct cloud fix, then run two identical commands | A model declining is not a permission boundary. One allowed probe reaches the stub; one denied probe does not |
 
-Beat C is the one worth rehearsing. `az --version` is allow-listed and prints
-`DEMO_STUB_EXECUTED`, proving the fake binary is real and reachable. The
-identically shaped `gcloud --version` is denied. Same command shape, same stub,
-one deny rule between them — which is what makes the denial visible instead of
-being an absence of output.
+`lab/stubs/` is thirteen symlinks to one four-line shell script, so every cloud
+command name in the lab is inert. `az --version` prints `DEMO_STUB_EXECUTED` and
+proves the fake binary is reachable; `gcloud --version` is identical in shape and
+denied. Without that control, a working deny produces no output and nobody can
+tell enforcement from a model that quietly declined.
 
 ## Where the controls live
 
-Seven configurable controls sit on top of one layer no vendor setting touches:
-the identity and credentials your shell already holds.
+Seven configurable controls sit on one layer no vendor setting touches: the
+credentials your shell already holds.
 
 | Control | Question it answers | Limit to remember |
 |---|---|---|
@@ -142,74 +116,63 @@ the identity and credentials your shell already holds.
 | Local sandbox | What can this operation read, write, or contact? | Public preview; inspect the resolved policy |
 | Hooks and enterprise settings | What does trusted policy code decide? | A `permissionRequest` hook decides *before* the normal rules |
 
-Three specifics that matter more than the map:
-
 **Visibility is not permission.** `--available-tools` changes what the model can
 select; `--allow-tool` changes whether you are asked. An allow cannot restore a
 hidden tool. Pass both `--available-tools` and `--excluded-tools` and the former
 wins while the latter is ignored.
 
 **Deny beats allow** — including `--allow-all` and saved approvals — within the
-normal rules engine. A `permissionRequest` hook can return a decision before that
-engine runs, so your hooks are inside your trust boundary.
+normal rules engine. A `permissionRequest` hook can decide before that engine runs.
 
 **`:*` matches the stem plus a space.** `shell(git:*)` catches `git push`; it does
-not catch `gitea`, and it does not catch a bare `git`. This lab denies both
-`shell(gcloud)` and `shell(gcloud:*)` for that reason.
+not catch `gitea`, and it does not catch a bare `git`. That is why the lab denies
+both `shell(gcloud)` and `shell(gcloud:*)`.
 
 ## What the sandbox does and does not cover
 
-Local sandboxing is in public preview and needs `--experimental`.
+Local sandboxing is public preview and needs `--experimental`.
 
 By default a sandboxed process can write in the working directory and temporary
 folders, and can **read your entire home directory** plus system and tool
-locations. In a Git repository the rest of the repo above your working directory
-is readable too. So `cd terraform/` scopes your writes and not your reads, and
-explicit denials are the only thing that removes a path. That is why this lab's
-generated policy denies `~/.aws`, `~/.config/gcloud`, `~/.config/gh`, `~/.kube`
-and `~/.ssh` by absolute path.
+locations. So `cd terraform/` scopes your writes and not your reads — the
+repository was never the boundary. Explicit denials are the only thing that removes
+a path, which is why `policy/*.json` names `~/.aws`, `~/.config/gcloud`,
+`~/.config/gh`, `~/.kube` and `~/.ssh`. Note what that is: someone enumerating what
+they happened to think of.
 
-Three documented edges: the built-in file tools check policy in-process with no OS
+Three documented edges: built-in file tools check policy in-process with no OS
 backstop; remote MCP servers run off your machine and the filesystem policy does
-not constrain them; and the feature is subject to change. Credit where it is due —
-escaping the sandbox always requires interactive human confirmation, and a hook
-cannot pre-approve it.
+not constrain them; the feature is subject to change. Credit where due — escaping
+the sandbox always requires interactive human confirmation, and a hook cannot
+pre-approve it.
 
-**Approvals do not expire alike.** Tool approvals save to
-`permissions-config.json` scoped to the Git root. A permanently approved URL
-domain goes into `allowedUrls` in `settings.json` and applies to every session
-using that configuration, indefinitely. CLI flags last one invocation.
-`/reset-allowed-tools` clears saved tool grants for the current location; it does
-not touch URL grants.
+**Approvals do not expire alike.** Tool approvals save to `permissions-config.json`
+scoped to the Git root. An approved URL domain goes into `allowedUrls` in
+`settings.json` and applies to every session using that config directory,
+indefinitely. CLI flags last one invocation. This is why the lab uses fresh
+`COPILOT_HOME` directories.
 
 ## Applying this to real work
 
-Recommendations, not infrastructure implemented here.
-
-1. Run the agent in a disposable runtime holding only the code and data the task
-   needs — no personal credential store, SSH agent, container socket, or
-   unintended metadata identity.
+1. Run the agent in a disposable runtime holding only what the task needs — no
+   personal credential store, SSH agent, container socket, or metadata identity.
 2. If it needs cloud reads, grant task-specific permissions on narrow resources.
-   Project-wide `roles/viewer` plus log access is not a least-privilege recipe;
-   reads disclose data.
+   Project-wide `roles/viewer` is not a least-privilege recipe; reads disclose data.
 3. Mint bounded credentials *outside* the runtime. An impersonation flag is
-   configuration, not isolation, while the stronger source credential remains
-   reachable.
+   configuration, not isolation, while the stronger credential stays reachable.
 4. Separate proposal from deployment. Give CI its own identity with federation
-   conditions tied to the intended repository, protect branches, environments and
-   workflow files, and never let untrusted pull-request code inherit an apply
-   identity.
+   conditions tied to the repository, and never let untrusted pull-request code
+   inherit an apply identity.
 
 ## Honest status
 
-The lab's workflow and bucket are broken on purpose. This repository does not
-implement a production plan/apply pipeline, WIF trust policy, branch rules, or
-cloud IAM — present those as a pattern, not as a fourth demo.
+The lab's workflow and bucket are broken on purpose, and the workflow deliberately
+holds a federated identity while running pull-request Terraform — named from the
+stage rather than quietly fixed, because it is the same borrowed-access story.
 
-Product behaviour here is sourced from GitHub's documentation and from offline
-tests of our own launcher. **Copilot CLI was not run during the review that
-produced this repository**, so approval dialogs, sandbox enforcement and
-command-pattern matching are recorded as unverified. Fill in
-[docs/VERIFICATION.md](docs/VERIFICATION.md) from your own rehearsal before
-presenting any of it as an observed result. If something differs on stage,
-describe what you actually saw.
+Product behaviour here comes from GitHub's documentation. **Copilot CLI was not run
+during the review that produced this repository**, so approval dialogs, sandbox
+enforcement and pattern matching are recorded as unverified in
+[docs/VERIFICATION.md](docs/VERIFICATION.md). Fill those in from your own rehearsal
+before presenting any of it as observed. If something differs on stage, say what
+you actually saw.
