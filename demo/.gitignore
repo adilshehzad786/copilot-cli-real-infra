@@ -1,0 +1,7 @@
+.env
+*.tfvars
+*.tfstate
+*.tfstate.*
+.terraform/
+*.tfplan
+.github/copilot/settings.local.json

@@ -1,0 +1,44 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Node
+node_modules/
+
+# Generated decks. The distributed deck is committed at
+# presentations/copilot-cli-real-infra-deck.pptx; everything a build writes
+# goes under presentations/build/ and stays out of the repository.
+presentations/build/
+presentations/previews/
+~$*.pptx
+
+# Rehearsal output. Recordings and observation notes stay local: they can
+# contain account names, tokens on screen, or an employer's estate details.
+docs/evidence/local/
+*.cast
+*.mov
+*.mp4
+
+# Never commit a real credential or state file, even from the lab fixtures.
+.env
+.env.*
+!.env.example
+*.tfvars
+*.tfvars.json
+*.tfstate
+*.tfstate.*
+*.tfplan
+.terraform/
+.terraform.lock.hcl
+gha-creds-*.json
+*.pem
+# NOTE: this also matches Keynote decks (.key). That is deliberate -- a private
+# key slipping into a public talk repo is the worse failure. To commit a Keynote
+# file anyway: git add -f your-deck.key
+*.key
+
+# OS
+.DS_Store
+Thumbs.db

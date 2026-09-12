@@ -1,0 +1,17 @@
+#!/bin/sh
+# Local rehearsal stub. Never invokes a cloud SDK and never sends a network
+# request. It is copied over every name in lab.py's STUBBED tuple, so a command
+# that slips past a deny rule lands here instead of on a real SDK.
+#
+# `<name> --version` is harmless and prints an unmistakable marker naming itself.
+# Beat C uses that as the experiment's positive control: the allowed probe prints
+# the marker, proving the fake binary is real and reachable, and the denied probe
+# of identical shape prints nothing. Anything else exits non-zero, which is a
+# stub refusal and must never be narrated as a Copilot permission denial.
+if [ "$#" -eq 1 ] && [ "$1" = "--version" ]; then
+  printf 'DEMO_STUB_EXECUTED: fake %s; no cloud operation occurred.\n' "${0##*/}"
+  exit 0
+fi
+printf 'LAB STUB (%s): cloud and Terraform execution are disabled in this rehearsal.\n' \
+  "${0##*/}" >&2
+exit 97
