@@ -268,7 +268,14 @@ Deny rules are the speed bump on the honest path. IAM is the wall.
   `shell(az --version)` does not match while `shell(az)` does, that `apply_patch`
   is not a tool name, that path access defaults to the working directory, that
   `deniedPaths` works only under `userPolicy.filesystem`, and that enforcement
-  comes from `settings.json` rather than `--experimental`. Taken from GitHub's
+  comes from `settings.json` rather than `--experimental`. Also observed on this
+  build: `shell(gcloud:*)` matches a bare `gcloud` with no arguments (the
+  stem-plus-space reading of the docs is wrong here — denying both spellings is
+  belt-and-braces, not load-bearing); a grant-only `userPolicy.filesystem` policy
+  also removed the default home-directory read (`~/.zshrc` was blocked with no
+  deny rule naming it); and fresh `COPILOT_HOME` directories authenticated without
+  a login step on this machine — with one transient failure window that a retry
+  cleared, so pre-warm profiles before a demo. Taken from GitHub's
   documentation and *not* observed: deny-vs-allow precedence, the
   `--excluded-tools` interaction, and the hook short-circuit. Model wording varies
   between runs — if yours differs, trust what you saw.

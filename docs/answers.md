@@ -80,5 +80,5 @@ terraform -chdir=lab/terraform init -backend=false && terraform -chdir=lab/terra
 ```
 
 `validate` needs the provider downloaded, which is a deliberate network step the
-launchers never take. Neither formatting nor validation establishes IAM
+lab never takes. Neither formatting nor validation establishes IAM
 correctness. See the [bucket resource documentation](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/storage_bucket).
