@@ -6,32 +6,40 @@
     "allowDevToolAccess": false,
     "sandboxMcpServers": true,
     "sandboxLspServers": true,
-    "auth": { "git": false, "gh": false },
+    "auth": {
+      "git": false,
+      "gh": false
+    },
     "userPolicy": {
-      "readonlyPaths": ["__LAB__"],
-      "readwritePaths": [],
       "filesystem": {
-        "readonlyPaths": ["__LAB__"],
-        "readwritePaths": []
+        "readonlyPaths": [
+          "__LAB__"
+        ],
+        "readwritePaths": [],
+        "deniedPaths": [
+          "__LAB__/.env",
+          "__HOME__/.aws",
+          "__HOME__/.azure",
+          "__HOME__/.config/gcloud",
+          "__HOME__/.config/gh",
+          "__HOME__/.kube",
+          "__HOME__/.ssh",
+          "__HOME__/.gitconfig",
+          "__HOME__/.netrc",
+          "__HOME__/.git-credentials",
+          "__HOME__/.docker",
+          "__HOME__/.npmrc",
+          "__HOME__/.terraform.d",
+          "__HOME__/.gnupg"
+        ]
       },
-      "deniedPaths": [
-        "__LAB__/.env",
-        "__HOME__/.aws",
-        "__HOME__/.azure",
-        "__HOME__/.config/gcloud",
-        "__HOME__/.config/gh",
-        "__HOME__/.kube",
-        "__HOME__/.ssh",
-        "__HOME__/.gitconfig",
-        "__HOME__/.netrc",
-        "__HOME__/.git-credentials",
-        "__HOME__/.docker",
-        "__HOME__/.npmrc",
-        "__HOME__/.terraform.d",
-        "__HOME__/.gnupg"
-      ],
-      "network": { "allowOutbound": false, "allowLocalNetwork": false },
-      "seatbelt": { "keychainAccess": false }
+      "network": {
+        "allowOutbound": false,
+        "allowLocalNetwork": false
+      },
+      "seatbelt": {
+        "keychainAccess": false
+      }
     }
   }
 }
